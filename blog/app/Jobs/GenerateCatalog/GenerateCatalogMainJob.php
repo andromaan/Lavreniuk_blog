@@ -2,29 +2,64 @@
 
 namespace App\Jobs\GenerateCatalog;
 
-use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
-use Illuminate\Foundation\Bus\Dispatchable;
-use Illuminate\Queue\InteractsWithQueue;
-use Illuminate\Queue\SerializesModels;
 
-class GenerateCatalogMainJob implements ShouldQueue
+class GenerateCatalogMainJob extends AbstractJob
 {
-    use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
     /**
-     * Create a new job instance.
+     * @throws \Psr\SimpleCache\InvalidArgumentException
+     * @throws \Throwable
      */
-    public function __construct()
+    public function handle()
     {
-        //
+        $this->debug('start');
+
+        // Спочатку кешуємо продукти
+        GenerateCatalogCacheJob::dispatch();
+
+        // Створюємо ланцюг завдань формування файлів з цінами
+        $chainPrices = $this->getChainPrices();
+
+        // Основні підзавдання
+        $chainMain = [
+            new GenerateCategoriesJob, // Генерація категорій
+            new GenerateDeliveriesJob, // Генерація способів доставок
+            new GeneratePointsJob, // Генерація пунктів видачі
+        ];
+
+        // Підзавдання, які мають виконуваться останніми
+        $chainLast = [
+            // Архівування файлів і перенесення архіву в публічний каталог
+            new ArchiveUploadsJob,
+            // Відправка повідомлення зовнішньому сервісу про те, що можна завантажувати новий файл каталога товарів
+            new SendPriceRequestJob,
+        ];
+
+        $chain = array_merge($chainPrices, $chainMain, $chainLast);
+
+        GenerateGoodsFileJob::withChain($chain)->dispatch();  //створюємо файл з товарами
+        //GenerateGoodsFileJob::dispatch()->chain($chain);
+
+        $this->debug('finish');
     }
 
+
     /**
-     * Execute the job.
+     * Формування ланцюгів підзавдань по генерації файлів з цінами
+     *
+     * @return array
      */
-    public function handle(): void
+    private function getChainPrices()
     {
-        //
+        $result = [];
+        $products = collect([1, 2, 3, 4, 5]);
+        $fileNum = 1;
+
+        foreach ($products->chunk(1) as $chunk) {
+            $result[] = new GeneratePricesFileChunkJob($chunk, $fileNum);
+            $fileNum++;
+        }
+
+        return $result;
     }
 }

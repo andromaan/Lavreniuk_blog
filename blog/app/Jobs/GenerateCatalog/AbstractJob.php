@@ -14,17 +14,28 @@ class AbstractJob implements ShouldQueue
 
     /**
      * Create a new job instance.
+     *
+     * @return void
      */
     public function __construct()
     {
-        //
+        $this->onQueue('generate-catalog'); //черга по замовчанню
     }
 
     /**
      * Execute the job.
+     *
+     * @return void
      */
-    public function handle(): void
+    public function handle()
     {
-        //
+        $this->debug('done');
+    }
+
+    protected function debug (string $msg)
+    {
+        $class = static::class;
+        $msg = $msg . " [{$class}]";
+        \Log::info($msg);
     }
 }

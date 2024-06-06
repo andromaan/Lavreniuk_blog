@@ -2,29 +2,15 @@
 
 namespace App\Jobs\GenerateCatalog;
 
-use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
-use Illuminate\Foundation\Bus\Dispatchable;
-use Illuminate\Queue\InteractsWithQueue;
-use Illuminate\Queue\SerializesModels;
 
-class GeneratePointsJob implements ShouldQueue
+class GeneratePointsJob extends AbstractJob
 {
-    use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-    /**
-     * Create a new job instance.
-     */
-    public function __construct()
+    public function handle()
     {
-        //
+        $f = 1 / 0; //симулюємо помилку
+
+        parent::handle();
     }
 
-    /**
-     * Execute the job.
-     */
-    public function handle(): void
-    {
-        //
-    }
 }
