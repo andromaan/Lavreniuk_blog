@@ -1,7 +1,5 @@
 <?php
 
-use App\Http\Controllers\Blog\PostController;
-use App\Http\Controllers\Blog\Admin\PostController as AdminPostController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\RestTestController;
 use App\Http\Controllers\DiggingDeeperController;
@@ -20,21 +18,19 @@ Route::middleware([
     })->name('dashboard');
 });
 
+Route::resource('rest', RestTestController::class)
+    ->names('restTest');
+
 Route::group(['prefix' => 'digging_deeper'], function () {
-
-    Route::get('collections', [DiggingDeeperController::class, 'collections'])
-
-        ->name('digging_deeper.collections');
-
     Route::get('process-video', [DiggingDeeperController::class, 'processVideo'])
         ->name('digging_deeper.processVideo');
 
     Route::get('prepare-catalog', [DiggingDeeperController::class, 'prepareCatalog'])
         ->name('digging_deeper.prepareCatalog');
+    Route::get('collections', [DiggingDeeperController::class, 'collections'])
+        ->name('digging_deeper.collections');
+
 });
-
-Route::resource('rest', RestTestController::class)->names('restTest');
-
 Route::group([ 'namespace' => 'App\Http\Controllers\Blog', 'prefix' => 'blog'], function () {
     Route::resource('posts', PostController::class)->names('blog.posts');
 });
@@ -51,14 +47,12 @@ Route::group($groupData, function () {
         ->only($methods)
         ->names('blog.admin.categories');
     //BlogPost
-    Route::resource('posts', AdminPostController::class)
+    Route::resource('posts', PostController::class)
         ->except(['show'])                               //не робити маршрут для метода show
         ->names('blog.admin.posts');
-
 });
 
-Route::get('api/blog/posts', [\App\Http\Controllers\Api\Blog\PostController::class, 'index']);
-
-Route::get('/api/blog/posts/{post}', [\App\Http\Controllers\Api\Blog\PostController  ::class, 'show']);
-
-
+Route::get('/token', function (Request $request) {
+    $token = $request->session()->token();
+    return $token;
+});
